@@ -64,32 +64,40 @@ def default(obj):
     raise TypeError('%r is not JSON serializable' % obj)
 
 
-def loads(text):
-    return json.loads(text, object_hook=object_hook)
+def loads(text, cls=None):
+    return json.loads(text, object_hook=object_hook, cls=cls)
 
 
-def dumps(dct):
-    return json.dumps(dct, sort_keys=True, default=default)
+def dumps(dct, cls=None):
+    return json.dumps(dct, sort_keys=True, default=default, cls=cls)
 
 
 class JSONSerializer(DictionarySerializer):
 
+    # used as the cls= parameter to json.dumps and json.loads
+    json_serializer_cls = None
+
+    def __init__(self, json_serializer_cls=None, *args, **kwargs):
+        if json_serializer_cls:
+            self.json_serializer_cls = json_serializer_cls
+        super().__init__(*args, **kwargs)
+        
     def serialize_workflow_spec(self, wf_spec, **kwargs):
         thedict = super(JSONSerializer, self).serialize_workflow_spec(
             wf_spec, **kwargs)
         return dumps(thedict)
 
     def deserialize_workflow_spec(self, s_state, **kwargs):
-        thedict = loads(s_state)
+        thedict = loads(s_state, cls=self.json_serializer_cls)
         return super(JSONSerializer, self).deserialize_workflow_spec(
             thedict, **kwargs)
 
     def serialize_workflow(self, workflow, **kwargs):
         thedict = super(JSONSerializer, self).serialize_workflow(
             workflow, **kwargs)
-        return dumps(thedict)
+        return dumps(thedict, cls=self.json_serializer_cls)
 
     def deserialize_workflow(self, s_state, **kwargs):
-        thedict = loads(s_state)
+        thedict = loads(s_state, cls=self.json_serializer_cls)
         return super(JSONSerializer, self).deserialize_workflow(
             thedict, **kwargs)
